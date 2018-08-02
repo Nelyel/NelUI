@@ -1,0 +1,4 @@
+<Ui>
+	<Script file="readycheck.lua"/>
+	<Script file="talentmacro.lua"/>
+</Ui>
