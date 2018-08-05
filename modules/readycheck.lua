@@ -222,15 +222,28 @@ end
 
 function RC:READY_CHECK()
 	PlaySound(SOUNDKIT.READY_CHECK, "master")
+	
+	if NEL.profile.RC.enable then
+		local _, _, id = GetInstanceInfo()
 
-	self:UpdateConsumables()
-	self:UpdateHealthstone()
-	self:UpdateDurability()
-	RC.ticker = C_Timer.NewTicker(1, function() self:UpdateConsumables() end)
-		
-	self:RegisterEvent("UNIT_AURA")
-	self:RegisterEvent("BAG_UPDATE_DELAYED")
-	self:RegisterEvent("UPDATE_INVENTORY_DURABILITY")
+		if ((NEL.profile.RC.DN and id == 1) or (NEL.profile.RC.DH and id == 2) or (NEL.profile.RC.DM and id == 23) or
+		   (NEL.profile.RC.RN and id == 14) or (NEL.profile.RC.RH and id == 15) or (NEL.profile.RC.RM and id == 16)) then
+		   	NelUIReadyCheckFrame:Show()
+
+			self:UpdateConsumables()
+			self:UpdateHealthstone()
+			self:UpdateDurability()
+			RC.ticker = C_Timer.NewTicker(1, function() self:UpdateConsumables() end)
+				
+			self:RegisterEvent("UNIT_AURA")
+			self:RegisterEvent("BAG_UPDATE_DELAYED")
+			self:RegisterEvent("UPDATE_INVENTORY_DURABILITY")
+		else 
+			NelUIReadyCheckFrame:Hide()
+		end
+	else
+		NelUIReadyCheckFrame:Hide()
+	end
 end
 
 function RC:READY_CHECK_CONFIRM(event, unit)
@@ -256,8 +269,6 @@ function RC:READY_CHECK_FINISHED()
 end
 
 function RC:OnInitialize()
-	if not NEL.profile.RC then return end
-
 	self:CreateMainFrame()
 	self:RegisterEvent("READY_CHECK")
 	self:RegisterEvent("READY_CHECK_CONFIRM")

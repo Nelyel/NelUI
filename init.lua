@@ -20,7 +20,15 @@ end
 function NEL:InitProfile()
 	local t = {
 		["modules"] = {
-			["RC"] = true,
+			["RC"] = {
+				["enable"] = true,
+				["DN"] = true,
+				["DH"] = true,
+				["DM"] = true,
+				["RN"] = true,
+				["RH"] = true,
+				["RM"] = true
+			}, 
 			["TM"] = true
 		}
 	}

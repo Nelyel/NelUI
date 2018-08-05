@@ -1,7 +1,7 @@
 ## Interface: 80000
 ## Title: |cFFC41F3BNel|r|cFFFFFFFFUI|r
 ## Author: Nelyel - Kult der Verdammten EU
-## Version: 0.1
+## Version: 0.2
 ## RequiredDeps: ElvUI
 ## SavedVariables: NelDB
 
