@@ -355,10 +355,10 @@ function AM:CreateTooltip(self)
 
 	if numchars == 0 then return end
 	
-	if NEL.LQT:IsAcquired("NelUIAltManagerV") then
+	if NEL.LQT:IsAcquired("NelUIAltManager") then
 		tooltip:Clear()
 	else
-		tooltip = NEL.LQT:Acquire("NelUIAltManagerV", numchars*2+1)
+		tooltip = NEL.LQT:Acquire("NelUIAltManager", numchars*2+1)
 
 		tooltip:SetBackdropColor(0,0,0,1)
 
@@ -407,7 +407,7 @@ function AM:CreateTooltip(self)
 	 		countchars = countchars + 1
 	 	end
 	 	posirealm = posirealm + #CHARS[i]*2
-	 	
+
 	 	if countchars > numchars then return tooltip:Show() end
 	end
 

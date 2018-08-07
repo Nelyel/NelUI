@@ -25,4 +25,4 @@ local function OnClick(self)
 	NEL.Config:BuildOptionFrame()
 end
 
-DT:RegisterDatatext("NelUI Alt Manager v", {"PLAYER_ENTERING_WORLD", "CHAT_MSG_CURRENCY", "CURRENCY_DISPLAY_UPDATE", "BAG_UPDATE_DELAYED"}, OnEvent, nil, OnClick, OnEnter)
+DT:RegisterDatatext("NelUI Alt Manager", {"PLAYER_ENTERING_WORLD", "CHAT_MSG_CURRENCY", "CURRENCY_DISPLAY_UPDATE", "BAG_UPDATE_DELAYED"}, OnEvent, nil, OnClick, OnEnter)
