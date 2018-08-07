@@ -7,6 +7,7 @@ local NEL = LibStub("AceAddon-3.0"):NewAddon(AddOnName)
 
 _G.NelUI = NEL
 
+NEL.LQT = LibStub("LibQTip-1.0")
 NEL.LSM = LibStub("LibSharedMedia-3.0")
 
 NEL.TexturePath = "Interface\\AddOns\\NelUI\\media\\textures\\"
@@ -29,7 +30,8 @@ function NEL:InitProfile()
 				["RH"] = true,
 				["RM"] = true
 			}, 
-			["TM"] = true
+			["TM"] = true,
+			["AM"] = true
 		}
 	}
 
@@ -41,4 +43,5 @@ function NEL:OnInitialize()
 	NelDB.profile[NEL.Character] = NelDB.profile[NEL.Character] or self:InitProfile()
 
 	NEL.profile = NelDB.profile[NEL.Character].modules
+	NEL.alts = NelDB.altmanager
 end

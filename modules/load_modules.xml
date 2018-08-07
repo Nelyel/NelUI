@@ -1,4 +1,7 @@
 <Ui>
+	<Script file="altmanager.lua"/>
 	<Script file="readycheck.lua"/>
 	<Script file="talentmacro.lua"/>
+
+	<Script file="datatext\altmanager.lua"/>
 </Ui>
