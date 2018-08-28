@@ -66,22 +66,28 @@ local LABEL = {
 	"Talent Macro"
 }
 
-function C:BuildOptionFrame()
+function C:BuildOptionFrame(nelmodule)
 	if NelUIMainFrame and NelUIMainFrame:IsShown() then
 		NelUIMainFrame:Hide()
 		return
 	elseif NelUIMainFrame then
+		if nelmodule == "alt_manager" then
+			ReleaseChildren(NelUIOptionFrame)
+			C.BuildAltManagerOption()
+		end
+		
 		NelUIMainFrame:Show()
 		return
 	end
 
 	local frame = CreateFrame("Frame", "NelUIMainFrame", UIParent)
 	local close = CreateFrame("Button", "NelUIOCloseButton", frame)
+	local install = CreateFrame("Button", "NelUIOInstallButton", frame)
 	local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	local option = CreateFrame("Frame", "NelUIOptionFrame", frame)
 
 	frame:SetTemplate("Transparent")
-	frame:SetSize(890, 651)
+	frame:SetSize(890, 550)
 	frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 	frame:SetFrameStrata("HIGH")
 	frame:SetClampedToScreen(true)
@@ -110,14 +116,31 @@ function C:BuildOptionFrame()
 	close.Text:SetText("x")
 	close.Text:SetPoint("CENTER", 1, 0)
 
+	install:SetTemplate("Transparent")
+	install:SetPoint("TOPRIGHT", -17, -34)
+	install:SetSize(200, 23)
+	install:SetScript("OnEnter", function(self) self:SetBackdropBorderColor(unpack(E["media"].rgbvaluecolor)) end)
+	install:SetScript("OnLeave", function(self) self:SetTemplate("Transparent") end)
+	install:SetScript("OnClick", function(self) 
+		NEL.AddOnProfile:LoadProjectAzilrokaProfile()
+		ReloadUI()
+	end)
+
+	install.Text = install:CreateFontString(nil, "OVERLAY")
+	install.Text:SetFont(NEL.LSM:Fetch("font", "NelUI"), 12, "OUTLINE")
+	install.Text:SetJustifyH("CENTER")
+	install.Text:SetJustifyV("MIDDLE")
+	install.Text:SetText("Install")
+	install.Text:SetPoint("CENTER", 0, 0)
+
 	option:SetTemplate("Transparent")
-	option:SetPoint("TOPLEFT", 17 + 176, -34)
+	option:SetPoint("TOPLEFT", 17 + 176, -58)
 	option:SetPoint("BOTTOMRIGHT", -17, 17)
 
 	for i, label in ipairs(LABEL) do
 		local menu = CreateFrame("Button", "MenuButton"..i, frame)
 		menu:SetTemplate("Transparent")
-		menu:SetPoint(unpack(i == 1 and {"TOPLEFT", 17, -34} or {"TOP", "MenuButton"..i-1, "BOTTOM", 0, -1}))
+		menu:SetPoint(unpack(i == 1 and {"TOPLEFT", 17, -58} or {"TOP", "MenuButton"..i-1, "BOTTOM", 0, -1}))
 		menu:SetSize(175, 20)
 		menu:SetScript("OnEnter", function(self) self:SetBackdropBorderColor(unpack(E["media"].rgbvaluecolor)) end)
 		menu:SetScript("OnLeave", function(self) self:SetTemplate("Transparent") end)
@@ -140,6 +163,11 @@ function C:BuildOptionFrame()
 		menu.Text:SetJustifyV("MIDDLE")
 		menu.Text:SetText(label)
 		menu.Text:SetPoint("LEFT", 6, 0)
+	end
+
+	if nelmodule == "alt_manager" then
+		ReleaseChildren(NelUIOptionFrame)
+		C.BuildAltManagerOption()
 	end
 end
 

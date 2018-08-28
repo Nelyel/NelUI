@@ -43,5 +43,4 @@ function NEL:OnInitialize()
 	NelDB.profile[NEL.Character] = NelDB.profile[NEL.Character] or self:InitProfile()
 
 	NEL.profile = NelDB.profile[NEL.Character].modules
-	NEL.alts = NelDB.altmanager
 end

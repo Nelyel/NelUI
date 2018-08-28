@@ -1,6 +1,0 @@
-[ReadyCheck]
-	- Difficulty Filter
-
-[Altmanager]
-
-[Config]

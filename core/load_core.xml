@@ -1,4 +1,6 @@
 <Ui>
 	<Script file="install.lua"/>
 	<Script file="config.lua"/>
+
+	<Include file="profiles\load_profiles.xml"/>
 </Ui>

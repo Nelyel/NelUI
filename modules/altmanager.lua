@@ -4,21 +4,8 @@ NEL.AltManager = AM
 
 local AddOnName = ...
 
---[[
 local DUNGEONS = {
-	[244] = "AD", 
-	[245] = "FH",
-	[246] = "KR",
-	[247] = "SotS",
-	[248] = "SoB",
-	[249] = "ToS",
-	[250] = "TM",
-	[251] = "TU",
-	[252] = "TD",
-	[353] = "WM"
---]]
-
-local DUNGEONS = {
+	-- LEGION
 	[199] = "BRH", 
 	[210] = "CoS",
 	[198] = "DHT",
@@ -31,12 +18,22 @@ local DUNGEONS = {
 	[227] = "LK",
 	[233] = "CoEN",
 	[234] = "UK",
-	[239] = "SotT"
+	[239] = "SotT",
+	--- BFA
+	[244] = "AD", 
+	[245] = "FH",
+	[246] = "KR",
+	[247] = "SotS",
+	[248] = "SoB",
+	[249] = "ToS",
+	[250] = "TM",
+	[251] = "TU",
+	[252] = "TD",
+	[353] = "WM"
 }
 
 local EVENTS = {
 	["Timewalking Dungeon Event"] = "TW Event",
-	["Legion Dungeon Event"] = "LD Event",
 	["Battle for Azeroth Dungeon Event"] = "BfA Event",
 	["Pet Battle Bonus Event"] = "PB Event",
 	["Arena Skirmish Bonus Event"] = "AS Event",
@@ -45,10 +42,10 @@ local EVENTS = {
 }
 
 local WEEKLYQUESTS = {
-	44164,	-- TBC TW Event
-	44166,	-- WotLK TW event
-	44167,	-- Cata TW Event
-	45799,	-- MoP TW Event
+	44164,	-- TW Event TBC
+	44166,	-- TW event WotLK 53033
+	44167,	-- TW Event Cata 53034
+	45799,	-- TW Event MoP 53035
 	44171,	-- Dungeon Event
 	39042,	-- PB Event
 	44172,	-- AS Event
@@ -75,15 +72,36 @@ local function spairs(t, order)
     end
 end
 
-local function EnableAPI()
-	if not IsAddOnLoaded("Blizzard_ChallengesUI") then
-		UIParentLoadAddOn("Blizzard_ChallengesUI")
+local function RealAbbreviateNumber(num, places)
+    local ret
+    local placeValue = ("%%.%df"):format(places or 0)
+    if not num then
+        return 0
+    elseif num >= 1000000000000 then
+        ret = placeValue:format(num / 1000000000000) .. "T" -- trillion
+    elseif num >= 1000000000 then
+        ret = placeValue:format(num / 1000000000) .. "B" -- billion
+    elseif num >= 1000000 then
+        ret = placeValue:format(num / 1000000) .. "M" -- million
+    elseif num >= 1000 then
+        ret = placeValue:format(num / 1000) .. "k" -- thousand
+    else
+        ret = num -- hundreds
+    end
+    return ret
+end
+
+local function GetWoWAPI()
+	if C_MythicPlus.IsMythicPlusActive() then
+		if not IsAddOnLoaded("Blizzard_ChallengesUI") then
+			UIParentLoadAddOn("Blizzard_ChallengesUI")
+		end
+	   	
+	   	PVEFrame:Show()
+		PVEFrameTab3:Click()
+		PVEFrameTab1:Click()
+		PVEFrame:Hide()
 	end
-   	
-   	PVEFrame:Show()
-	PVEFrameTab3:Click()
-	PVEFrameTab1:Click()
-	PVEFrame:Hide()
 
 	if not IsAddOnLoaded("Blizzard_Calendar") then
 		UIParentLoadAddOn("Blizzard_Calendar")
@@ -119,10 +137,11 @@ local function GetCurrentWeeklyEvent ()
 			end
 		end
 	end
+	return "none"
 end
 
 function AM:GetCharacters(filter)
-	local db = NelDB.altmanager
+	local db = NEL.alts
 	local realms, chars  = {}, {}
 
 	for realm in spairs(db, function(t, a, b) return t[a].order < t[b].order end) do
@@ -147,8 +166,35 @@ function AM:GetCharacters(filter)
 	return realms, chars
 end
 
-function AM:ValidateReset()
+function AM:GetNumCharacters(t)
+	local num = 0
+	for realm, v in pairs(t) do
+		num = num + #t[realm]
+    end
 
+    return num
+end
+
+function AM:ValidateReset()
+	if not NEL.alts then return end
+
+	local REALMS, CHARS = AM:GetCharacters()
+
+	for i, realm in pairs(REALMS) do
+		for j, char in pairs(CHARS[i]) do
+			local table = NEL.alts[realm][char]
+			local expiry = table.expires or 0
+			if time() > expiry then
+				table.highestmplus = 0
+				table.keystone = "unk. +?"
+				table.sealsbought = 0	
+				table.islandexpedition = "0/40.0k"
+				table.weekly = GetCurrentWeeklyEvent()
+
+				table.expires = self:GetNextWeeklyResetTime()
+			end
+       	end
+    end
 end
 
 function AM:CollectData()
@@ -166,7 +212,7 @@ function AM:CollectData()
 		azeritelevel = C_AzeriteItem.GetPowerLevel(azeriteItemLocation)
 	end
 
-	local keystone = "-"
+	local keystone = "unk. +?"
 	local highestmplus, weeklychestloot = C_MythicPlus.GetWeeklyChestRewardLevel()
 	if weeklychestloot == -1 then weeklychestloot = 0 end
 
@@ -177,21 +223,27 @@ function AM:CollectData()
 		keystone = format("%s +%d", dungeon, level)
 	end
 
-	-- local _, seals = GetCurrencyInfo(1580)
-	local _, seals = GetCurrencyInfo(1273)
+	local _, seals = GetCurrencyInfo(1580)
 	local sealsbought = 0
 
 	local source = {
-		43895, 43896, 43897, -- Gold
-		43892, 43893, 43894, -- Resources
-		47851, 47864, 47865, -- Marks
-		43510				 -- Orderhall
+		52834, 52838, -- Gold
+		52837, 52840, -- Resources
+		52835, 52839, -- Marks
 	}
 
 	for i = 1, #source do
 		if IsQuestFlaggedCompleted(source[i]) then
 			sealsbought = sealsbought + 1
 		end
+	end
+
+	local islandexpedition = "|cff6c7378done|r"
+	local islandexpeditionquest = C_IslandsQueue.GetIslandsWeeklyQuestID()
+	
+	if not (IsQuestFlaggedCompleted(islandexpeditionquest)) then
+		local _, _, _, fulfilled, required = GetQuestObjectiveInfo(islandexpeditionquest, 1, false)
+		islandexpedition = format("%s/%s", RealAbbreviateNumber(fulfilled, 1), RealAbbreviateNumber(required, 1))
 	end
 
 	local weekly = GetCurrentWeeklyEvent()
@@ -218,6 +270,7 @@ function AM:CollectData()
 
 	table.seals = seals
 	table.sealsbought = sealsbought
+	table.islandexpedition = islandexpedition
 	table.weekly = weekly
 
 	table.expires = self:GetNextWeeklyResetTime()
@@ -231,7 +284,7 @@ function AM:StoreData(data)
 
 	if UnitLevel("player") < 110 then return end
 
-	local db = NelDB.altmanager or {}
+	local db = NEL.alts
 	local realm = data.realm
 	local guid = data.guid
 
@@ -263,7 +316,7 @@ end
 function AM:ADDON_LOADED(...)
 	local event, loaded = ...
 	if event == "ADDON_LOADED" then
-		if AddOnName == loaded then
+		if loaded == AddOnName then
 			self:UnregisterEvent("ADDON_LOADED")
 
 			NelDB.altmanager = NelDB.altmanager or self:InitDB()
@@ -273,7 +326,7 @@ function AM:ADDON_LOADED(...)
 end
 
 function AM:PLAYER_LOGIN()
-	EnableAPI()
+	GetWoWAPI()
 	self:ValidateReset()
 	self:StoreData(self:CollectData())
 end
@@ -286,132 +339,19 @@ function AM:BAG_UPDATE_DELAYED()
 	self:StoreData(self:CollectData())
 end
 
+function AM:CHALLENGE_MODE_COMPLETED()
+	self:StoreData(self:CollectData())
+end
+
 function AM:OnInitialize()
 	NelDB.altmanager = NelDB.altmanager or self:InitDB()
+	NEL.alts = NelDB.altmanager
 
 	self:RegisterEvent("ADDON_LOADED")
 	self:RegisterEvent("PLAYER_LOGIN")
 	self:RegisterEvent("CHAT_MSG_CURRENCY")
 	self:RegisterEvent("BAG_UPDATE_DELAYED")
-end
------------------------------------
--- TOOLTIP
------------------------------------
-local LABELTOOLTIP = {
-	"Azerite Level:",
-	"Highest M+ done:",
-	"Keystone:",
-	"Seals:",
-	"Weekly:"
-}
-
-local TitleFont = CreateFont("NelUITitleFont")
-TitleFont:SetTextColor(255/255, 210/255, 0/255)
-
-local HeaderFont = CreateFont("NelUIHeaderFont")
-HeaderFont:SetTextColor(255/255, 210/255, 0/255)
-
-local RegFont = CreateFont("NelUIRegFont")
-RegFont:SetTextColor(255/255, 255/255, 255/255)
-
-local colorGrey = CreateFont("colorGrey")
-colorGrey:SetFont(GameTooltipText:GetFont(), 12)
-colorGrey:SetTextColor(108/255, 115/255, 120/255)
-
-local ilvlFont = CreateFont("NelUIilvlFont")
-ilvlFont:SetFont(GameTooltipText:GetFont(), 11)
-ilvlFont:SetTextColor(108/255, 115/255, 120/255)
-
-local function GetNumCharacters(t)
-	local num = 0
-	for realm, v in pairs(t) do
-		num = num + #t[realm]
-    end
-
-    return num
-end
-
-local function GetLine(i)
-	return -(1/6)*i^4+2*i^3-(25/3)*i^2+(31/2)*i-4
-end
-
-local function GetSealInformation(owned, brought)
-	local _, _, texture = GetCurrencyInfo(1273)
-	texture = format("\124T%s:%d:%d:0:0:64:64:4:60:4:60\124t", texture, 12, 12)
-
-	local s = format("%s %s/6", texture, owned)
-	local max = 3
-
-	if brought == max then 
-		return format("%s |cff6c7378(%s/%s)|r", s, brought, max) 
-	else 
-		return format("%s (%s/%s)", s, brought, max) 
-	end
-end
-
-function AM:CreateTooltip(self)
-	local REALMS, CHARS = AM:GetCharacters(true)
-	local numchars = GetNumCharacters(CHARS)
-
-	if numchars == 0 then return end
-	
-	if NEL.LQT:IsAcquired("NelUIAltManager") then
-		tooltip:Clear()
-	else
-		tooltip = NEL.LQT:Acquire("NelUIAltManager", numchars*2+1)
-
-		tooltip:SetBackdropColor(0,0,0,1)
-
-		HeaderFont:SetFont(GameTooltipHeaderText:GetFont())
-		RegFont:SetFont(GameTooltipText:GetFont())
-		tooltip:SetHeaderFont(HeaderFont)
-		tooltip:SetFont(RegFont)
-
-		tooltip:SmartAnchorTo(self)
-
-		tooltip:ClearAllPoints()
-		tooltip:SetPoint("BOTTOM", self, "TOP", 0, 2)
-
-		tooltip:SetAutoHideDelay(0.1, self)
-		tooltip:SetScript("OnShow", function(ttskinself) ttskinself:SetTemplate('Transparent') end)
-	end
-
-	-- CREATE LINES
-	for i = 1, 11 do
-		if i == 2 or i == 4 or i == 6 or i == 9 then
-			tooltip:AddSeparator(1, 108/255, 115/255, 120/255)
-		else
-			tooltip:AddLine()
-		end
-	end
-
-    -- SET LABEL
-    for i = 1, 5 do
-    	tooltip:SetCell(GetLine(i), 1, LABELTOOLTIP[i], "RIGHT")
-    end
-
-    local padding = 4
-
-    local countchars, posirealm = 1, 2
-    for i, realm in pairs(REALMS) do
-    	tooltip:SetCell(1, posirealm, realm, colorGrey, "LEFT", #CHARS[i]*2, nil, nil, padding)
-	 	for j, char in pairs(CHARS[i]) do
-	 		local character = NEL.alts[realm][char]
-	 		tooltip:SetCell(3, (countchars*2), format("|c%s%s|r", RAID_CLASS_COLORS[character.class].colorStr, character.name), "RIGHT")
-	 		tooltip:SetCell(3, (countchars*2)+1, format("ilvl %.2f", character.ilvl), ilvlFont, "LEFT", nil, nil, nil, padding)
-	 		tooltip:SetCell(5, (countchars*2), character.azeritelevel, "CENTER", 2, nil, nil, padding)
-            tooltip:SetCell(7, (countchars*2), character.highestmplus, "CENTER", 2, nil, nil, padding)
-            tooltip:SetCell(8, (countchars*2), character.keystone, "CENTER", 2, nil, nil, padding)
-            tooltip:SetCell(10, (countchars*2), GetSealInformation(character.seals, character.sealsbought), "CENTER", 2, nil, nil, padding)
-            tooltip:SetCell(11, (countchars*2), character.weekly, "CENTER", 2, nil, nil, padding)
-	 		countchars = countchars + 1
-	 	end
-	 	posirealm = posirealm + #CHARS[i]*2
-
-	 	if countchars > numchars then return tooltip:Show() end
-	end
-
-	tooltip:Show()
+	self:RegisterEvent("CHALLENGE_MODE_COMPLETED")
 end
 -----------------------------------
 -- MISC (COPYRIGHT SAVEDINSTANCES)
