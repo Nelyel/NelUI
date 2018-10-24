@@ -112,3 +112,9 @@ local function SetupChat()
 	ToggleChatColorNamesByClassGroup(true, "CHANNEL10")
 	ToggleChatColorNamesByClassGroup(true, "CHANNEL11")
 end
+
+SLASH_NELUICHAT1 = "/nelchat"
+SlashCmdList["NELUICHAT"] = function()
+	SetupChat()
+	ReloadUI()
+end

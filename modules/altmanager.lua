@@ -5,36 +5,21 @@ NEL.AltManager = AM
 local AddOnName = ...
 
 local DUNGEONS = {
-	-- LEGION
-	[199] = "BRH", 
-	[210] = "CoS",
-	[198] = "DHT",
-	[197] = "EoA",
-	[200] = "HoV",
-	[208] = "MoS",
-	[206] = "NL",
-	[209] = "AW",
-	[207] = "VotW",
-	[227] = "LK",
-	[233] = "CoEN",
-	[234] = "UK",
-	[239] = "SotT",
-	--- BFA
 	[244] = "AD", 
 	[245] = "FH",
-	[246] = "KR",
-	[247] = "SotS",
-	[248] = "SoB",
-	[249] = "ToS",
-	[250] = "TM",
-	[251] = "TU",
-	[252] = "TD",
-	[353] = "WM"
+	[246] = "TD",
+	[247] = "ML",
+	[248] = "WCM",
+	[249] = "KR",
+	[250] = "ToS",
+	[251] = "UR",
+	[252] = "SotS",
+	[353] = "SoB"
 }
 
 local EVENTS = {
 	["Timewalking Dungeon Event"] = "TW Event",
-	["Battle for Azeroth Dungeon Event"] = "BfA Event",
+	["Battle for Azeroth Dungeon Event"] = "M0/M+",
 	["Pet Battle Bonus Event"] = "PB Event",
 	["Arena Skirmish Bonus Event"] = "AS Event",
 	["World Quest Bonus Event"] = "WQ Event",
@@ -43,14 +28,14 @@ local EVENTS = {
 
 local WEEKLYQUESTS = {
 	44164,	-- TW Event TBC
-	44166,	-- TW event WotLK 53033
-	44167,	-- TW Event Cata 53034
-	45799,	-- TW Event MoP 53035
-	44171,	-- Dungeon Event
-	39042,	-- PB Event
-	44172,	-- AS Event
-	44175,  -- WQ EVENT
-	44173	-- BG Event
+	53033,	-- TW event WotLK
+	53034,	-- TW Event Cata
+	53035,	-- TW Event MoP
+	53037,	-- M0/M+
+	53038,	-- PB Event
+	53039,	-- AS Event
+	53030,  -- WQ EVENT
+	53036	-- BG Event
 }
 
 local function spairs(t, order)
@@ -91,7 +76,7 @@ local function RealAbbreviateNumber(num, places)
     return ret
 end
 
-local function GetWoWAPI()
+local function GetWoWAPI(calendar)
 	if C_MythicPlus.IsMythicPlusActive() then
 		if not IsAddOnLoaded("Blizzard_ChallengesUI") then
 			UIParentLoadAddOn("Blizzard_ChallengesUI")
@@ -103,15 +88,17 @@ local function GetWoWAPI()
 		PVEFrame:Hide()
 	end
 
-	if not IsAddOnLoaded("Blizzard_Calendar") then
-		UIParentLoadAddOn("Blizzard_Calendar")
-	end
+	if calendar then
+		if not IsAddOnLoaded("Blizzard_Calendar") then
+			UIParentLoadAddOn("Blizzard_Calendar")
+		end
 
-	if Calendar_Toggle then Calendar_Toggle() end
-	if Calendar_Toggle then Calendar_Toggle() end
+		if Calendar_Toggle then Calendar_Toggle() end
+		if Calendar_Toggle then Calendar_Toggle() end
+	end
 end
 
-local function GetCurrentWeeklyEvent ()
+local function GetCurrentWeeklyEvent()
 	local curHour, curMinute = GetGameTime()
 	local curDate = C_Calendar.GetDate()
 	local calDate = C_Calendar.GetMonthInfo()
@@ -137,7 +124,45 @@ local function GetCurrentWeeklyEvent ()
 			end
 		end
 	end
-	return "none"
+	return "|cff6c7378none|r"
+end
+
+local function GetEmmisaries()
+	local emmisaries = {}
+	local emmisary = GetQuestBountyInfoForMapID(876)
+
+	for emmisaryindex, emmisaryinfo in ipairs(emmisary) do
+	   local title = GetQuestLogTitle(GetQuestLogIndexByID(emmisaryinfo.questID))
+	   local timeleft = C_TaskQuest.GetQuestTimeLeftMinutes(emmisaryinfo.questID)
+	   local _, _, isfinish, questdone, questneed = GetQuestObjectiveInfo(emmisaryinfo.questID, 1, false)
+
+	   if timeleft then
+			if timeleft > 2880 then
+				if not emmisaries[3] then emmisaries[3] = {} end
+				emmisaries[3].icon = emmisaryinfo.icon
+				emmisaries[3].progress = format("%d/%d", questdone, questneed)
+			elseif timeleft > 1440 then
+				if not emmisaries[2] then emmisaries[2] = {} end
+				emmisaries[2].icon = emmisaryinfo.icon
+				emmisaries[2].progress = format("%d/%d", questdone, questneed)
+			else
+				if not emmisaries[1] then emmisaries[1] = {} end
+				emmisaries[1].icon = emmisaryinfo.icon
+				emmisaries[1].progress = format("%d/%d", questdone, questneed)
+			end
+	    end
+
+	    if IsQuestFlaggedCompleted(51918) or IsQuestFlaggedCompleted(51916) then
+			for i = 1, 3 do
+				if emmisaries[i] == nil then
+					emmisaries[i] = {}
+					emmisaries[i].icon, emmisaries[i].progress = 134400, "|cff6c73784/4|r"
+				end
+			end
+		end
+	end
+
+	return emmisaries
 end
 
 function AM:GetCharacters(filter)
@@ -183,15 +208,25 @@ function AM:ValidateReset()
 	for i, realm in pairs(REALMS) do
 		for j, char in pairs(CHARS[i]) do
 			local table = NEL.alts[realm][char]
-			local expiry = table.expires or 0
-			if time() > expiry then
+			local dailyreset = table.dailyreset or 0
+			local weeklyreset = table.weeklyreset or 0
+
+			if time() > dailyreset then
+				local emmisaries = GetEmmisaries()
+				table.emmisaries[1] = table.emmisaries[2]
+				table.emmisaries[2] = table.emmisaries[3]
+				table.emmisaries[3] = emmisaries[3]
+			end
+
+			if time() > weeklyreset then
 				table.highestmplus = 0
 				table.keystone = "unk. +?"
 				table.sealsbought = 0	
 				table.islandexpedition = "0/40.0k"
 				table.weekly = GetCurrentWeeklyEvent()
 
-				table.expires = self:GetNextWeeklyResetTime()
+				table.dailyreset = self:GetNextDailyResetTime()
+				table.weeklyreset = self:GetNextWeeklyResetTime()
 			end
        	end
     end
@@ -223,6 +258,8 @@ function AM:CollectData()
 		keystone = format("%s +%d", dungeon, level)
 	end
 
+	local emmisaries = GetEmmisaries()
+
 	local _, seals = GetCurrencyInfo(1580)
 	local sealsbought = 0
 
@@ -249,7 +286,7 @@ function AM:CollectData()
 	local weekly = GetCurrentWeeklyEvent()
 	for i = 1, #WEEKLYQUESTS do
 		if IsQuestFlaggedCompleted(WEEKLYQUESTS[i]) then
-			weekly = "done"
+			weekly = "|cff6c7378done|r"
 		end
 	end
 
@@ -268,12 +305,15 @@ function AM:CollectData()
 	table.highestmplus = highestmplus
 	table.weeklychestloot = weeklychestloot
 
+	table.emmisaries = emmisaries
+
 	table.seals = seals
 	table.sealsbought = sealsbought
 	table.islandexpedition = islandexpedition
 	table.weekly = weekly
 
-	table.expires = self:GetNextWeeklyResetTime()
+	table.dailyreset = self:GetNextDailyResetTime()
+	table.weeklyreset = self:GetNextWeeklyResetTime()
 
 	return table
 end
@@ -282,7 +322,7 @@ function AM:StoreData(data)
 	if not self.addonLoaded then return end
 	if not data or not data.guid then return end
 
-	if UnitLevel("player") < 110 then return end
+	if UnitLevel("player") < 120 then return end
 
 	local db = NEL.alts
 	local realm = data.realm
@@ -326,7 +366,7 @@ function AM:ADDON_LOADED(...)
 end
 
 function AM:PLAYER_LOGIN()
-	GetWoWAPI()
+	GetWoWAPI(true)
 	self:ValidateReset()
 	self:StoreData(self:CollectData())
 end
@@ -340,6 +380,7 @@ function AM:BAG_UPDATE_DELAYED()
 end
 
 function AM:CHALLENGE_MODE_COMPLETED()
+	GetWoWAPI()
 	self:StoreData(self:CollectData())
 end
 

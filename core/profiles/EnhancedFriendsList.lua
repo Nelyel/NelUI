@@ -16,6 +16,7 @@ function AP:LoadProjectAzilrokaProfile()
 		["MF"] = false,
 		["SMB"] = false,
 		["stAM"] = true,
+		["QS"] = false,
 	}
 	_G.ProjectAzilroka.data:SetProfile("NelUI")
 
