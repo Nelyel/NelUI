@@ -3,6 +3,7 @@
 ## Author: Nelyel - Kult der Verdammten EU
 ## Version: 0.3
 ## RequiredDeps: ElvUI
+## OptionalDeps: AddOnSkins
 ## SavedVariables: NelDB
 
 libs\load_libs.xml

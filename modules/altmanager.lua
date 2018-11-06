@@ -151,13 +151,13 @@ local function GetEmmisaries()
 				emmisaries[1].progress = format("%d/%d", questdone, questneed)
 			end
 	    end
+	end
 
-	    if IsQuestFlaggedCompleted(51918) or IsQuestFlaggedCompleted(51916) then
-			for i = 1, 3 do
-				if emmisaries[i] == nil then
-					emmisaries[i] = {}
-					emmisaries[i].icon, emmisaries[i].progress = 134400, "|cff6c73784/4|r"
-				end
+	if IsQuestFlaggedCompleted(51918) or IsQuestFlaggedCompleted(51916) then
+		for i = 1, 3 do
+			if emmisaries[i] == nil then
+				emmisaries[i] = {}
+				emmisaries[i].icon, emmisaries[i].progress = 134400, "|cff6c73784/4|r"
 			end
 		end
 	end
@@ -191,6 +191,8 @@ function AM:GetCharacters(filter)
 	return realms, chars
 end
 
+
+
 function AM:GetNumCharacters(t)
 	local num = 0
 	for realm, v in pairs(t) do
@@ -204,6 +206,7 @@ function AM:ValidateReset()
 	if not NEL.alts then return end
 
 	local REALMS, CHARS = AM:GetCharacters()
+	local emmisaries = GetEmmisaries()
 
 	for i, realm in pairs(REALMS) do
 		for j, char in pairs(CHARS[i]) do
@@ -212,10 +215,11 @@ function AM:ValidateReset()
 			local weeklyreset = table.weeklyreset or 0
 
 			if time() > dailyreset then
-				local emmisaries = GetEmmisaries()
 				table.emmisaries[1] = table.emmisaries[2]
 				table.emmisaries[2] = table.emmisaries[3]
 				table.emmisaries[3] = emmisaries[3]
+
+				table.dailyreset = self:GetNextDailyResetTime()
 			end
 
 			if time() > weeklyreset then
@@ -225,7 +229,6 @@ function AM:ValidateReset()
 				table.islandexpedition = "0/40.0k"
 				table.weekly = GetCurrentWeeklyEvent()
 
-				table.dailyreset = self:GetNextDailyResetTime()
 				table.weeklyreset = self:GetNextWeeklyResetTime()
 			end
        	end
